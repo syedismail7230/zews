@@ -9,6 +9,7 @@ import AuthLayout from './layouts/AuthLayout';
 
 // Pages
 import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Tasks from './pages/Tasks';
@@ -30,11 +31,10 @@ async function fetchUserProfile(userId: string, retries = PROFILE_FETCH_RETRIES)
       .from('user_profiles')
       .select('*')
       .eq('id', userId)
-      .maybeSingle(); // Use maybeSingle instead of single to handle null case
+      .maybeSingle();
 
     if (error) throw error;
 
-    // Return default profile if no data found
     return data || {
       id: userId,
       first_name: '',
@@ -55,7 +55,9 @@ async function fetchUserProfile(userId: string, retries = PROFILE_FETCH_RETRIES)
 }
 
 function App() {
-  const { user, setUser, isLoading, setLoading } = useAuthStore();
+  const { user, setUser, is
+
+Loading, setLoading } = useAuthStore();
   const { theme, setTheme } = useThemeStore();
   const [initError, setInitError] = useState<string | null>(null);
   
@@ -156,7 +158,11 @@ function App() {
         path="/"
         element={
           user ? (
-            <Navigate to="/dashboard" replace />
+            user.role === 'admin' ? (
+              <Navigate to="/admin" replace />
+            ) : (
+              <Navigate to="/dashboard" replace />
+            )
           ) : (
             <Navigate to="/login" replace />
           )
@@ -167,6 +173,18 @@ function App() {
       <Route path="/" element={<AuthLayout />}>
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
+      </Route>
+      
+      {/* Admin Routes */}
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute>
+            <DashboardLayout />
+          </AdminRoute>
+        }
+      >
+        <Route index element={<AdminDashboard />} />
       </Route>
       
       {/* App Routes */}
@@ -204,6 +222,20 @@ function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function AdminRoute({ children }: ProtectedRouteProps) {
+  const { user, isLoading } = useAuthStore();
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
+  if (!user || user.role !== 'admin') {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;

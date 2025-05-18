@@ -98,3 +98,50 @@ export enum NotificationType {
   DOCUMENT = 'document',
   SYSTEM = 'system'
 }
+
+export enum LeaveType {
+  ANNUAL = 'annual',
+  SICK = 'sick',
+  PERSONAL = 'personal',
+  UNPAID = 'unpaid'
+}
+
+export enum LeaveStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected'
+}
+
+export type Leave = {
+  id: string;
+  userId: string;
+  type: LeaveType;
+  startDate: string;
+  endDate: string;
+  status: LeaveStatus;
+  reason?: string;
+  approvedById?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Salary = {
+  id: string;
+  userId: string;
+  amount: number;
+  effectiveDate: string;
+  endDate?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PerformanceReview = {
+  id: string;
+  userId: string;
+  reviewerId: string;
+  reviewDate: string;
+  rating: number;
+  comments?: string;
+  createdAt: string;
+  updatedAt: string;
+};
