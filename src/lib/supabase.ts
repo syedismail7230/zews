@@ -12,14 +12,17 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storageKey: 'zews_auth'
+    storageKey: 'zews_auth',
+    storage: window.localStorage
   },
   realtime: {
     params: {
       eventsPerSecond: 10
     }
   },
-  db: {
-    schema: 'public'
+  global: {
+    headers: {
+      'x-application-name': 'zews'
+    }
   }
 });

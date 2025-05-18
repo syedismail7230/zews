@@ -32,15 +32,34 @@ function App() {
     
     const initializeApp = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          throw sessionError;
+        }
         
         if (session?.user) {
-          const { data: profileData } = await supabase
-            .from('user_profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .maybeSingle();
+          let retries = 3;
+          let profileData = null;
+          
+          while (retries > 0) {
+            const { data, error } = await supabase
+              .from('user_profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .maybeSingle();
+              
+            if (!error && data) {
+              profileData = data;
+              break;
+            }
             
+            retries--;
+            if (retries > 0) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          }
+          
           setUser({
             id: session.user.id,
             email: session.user.email || '',
@@ -58,7 +77,7 @@ function App() {
         setUser(null);
       } finally {
         setLoading(false);
-        setAppReady(true);
+        setTimeout(() => setAppReady(true), 1000);
       }
     };
 
@@ -66,25 +85,49 @@ function App() {
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        const { data: profileData } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .maybeSingle();
+        setLoading(true);
+        try {
+          let retries = 3;
+          let profileData = null;
           
-        setUser({
-          id: session.user.id,
-          email: session.user.email || '',
-          firstName: profileData?.first_name || session.user.user_metadata?.first_name || '',
-          lastName: profileData?.last_name || session.user.user_metadata?.last_name || '',
-          avatarUrl: profileData?.avatar_url,
-          role: profileData?.role || 'employee',
-          departmentId: profileData?.department_id,
-          createdAt: profileData?.created_at || session.user.created_at,
-          updatedAt: profileData?.updated_at || session.user.updated_at
-        });
+          while (retries > 0) {
+            const { data, error } = await supabase
+              .from('user_profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .maybeSingle();
+              
+            if (!error && data) {
+              profileData = data;
+              break;
+            }
+            
+            retries--;
+            if (retries > 0) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          }
+          
+          setUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            firstName: profileData?.first_name || session.user.user_metadata?.first_name || '',
+            lastName: profileData?.last_name || session.user.user_metadata?.last_name || '',
+            avatarUrl: profileData?.avatar_url,
+            role: profileData?.role || 'employee',
+            departmentId: profileData?.department_id,
+            createdAt: profileData?.created_at || session.user.created_at,
+            updatedAt: profileData?.updated_at || session.user.updated_at
+          });
+        } catch (error) {
+          console.error('Error during auth state change:', error);
+          setUser(null);
+        } finally {
+          setLoading(false);
+        }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
+        setLoading(false);
       }
     });
 
