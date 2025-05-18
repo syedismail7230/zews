@@ -24,7 +24,6 @@ import LoadingScreen from './components/LoadingScreen';
 function App() {
   const { user, setUser, isLoading, setLoading } = useAuthStore();
   const { theme, setTheme } = useThemeStore();
-  const [appReady, setAppReady] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
   
   useEffect(() => {
@@ -66,7 +65,6 @@ function App() {
         setUser(null);
       } finally {
         setLoading(false);
-        setAppReady(true);
       }
     };
 
@@ -109,7 +107,7 @@ function App() {
     };
   }, []);
 
-  if (!appReady || isLoading) {
+  if (isLoading) {
     return <LoadingScreen error={initError} />;
   }
 
