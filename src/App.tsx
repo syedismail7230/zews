@@ -46,27 +46,32 @@ function App() {
             const { data, error } = await supabase
               .from('user_profiles')
               .select('*')
-              .eq('id', session.user.id)
-              .single();
+              .eq('id', session.user.id);
               
             if (error) {
               throw new Error(`Profile error: ${error.message}`);
             }
             
-            if (!data) {
+            if (!data || data.length === 0) {
               throw new Error('User profile not found');
             }
+
+            if (data.length > 1) {
+              console.error('Multiple profiles found for user:', session.user.id);
+            }
+
+            const profile = data[0];
             
             setUser({
               id: session.user.id,
               email: session.user.email || '',
-              firstName: data.first_name || '',
-              lastName: data.last_name || '',
-              avatarUrl: data.avatar_url,
-              role: data.role || 'employee',
-              departmentId: data.department_id,
-              createdAt: data.created_at,
-              updatedAt: data.updated_at
+              firstName: profile.first_name || '',
+              lastName: profile.last_name || '',
+              avatarUrl: profile.avatar_url,
+              role: profile.role || 'employee',
+              departmentId: profile.department_id,
+              createdAt: profile.created_at,
+              updatedAt: profile.updated_at
             });
           } catch (profileError: any) {
             console.error('Profile fetch error:', profileError);
@@ -96,27 +101,32 @@ function App() {
           const { data, error } = await supabase
             .from('user_profiles')
             .select('*')
-            .eq('id', session.user.id)
-            .single();
+            .eq('id', session.user.id);
             
           if (error) {
             throw new Error(`Profile error: ${error.message}`);
           }
           
-          if (!data) {
+          if (!data || data.length === 0) {
             throw new Error('User profile not found');
           }
+
+          if (data.length > 1) {
+            console.error('Multiple profiles found for user:', session.user.id);
+          }
+
+          const profile = data[0];
           
           setUser({
             id: session.user.id,
             email: session.user.email || '',
-            firstName: data.first_name || '',
-            lastName: data.last_name || '',
-            avatarUrl: data.avatar_url,
-            role: data.role || 'employee',
-            departmentId: data.department_id,
-            createdAt: data.created_at,
-            updatedAt: data.updated_at
+            firstName: profile.first_name || '',
+            lastName: profile.last_name || '',
+            avatarUrl: profile.avatar_url,
+            role: profile.role || 'employee',
+            departmentId: profile.department_id,
+            createdAt: profile.created_at,
+            updatedAt: profile.updated_at
           });
         } catch (error: any) {
           console.error('Auth state change error:', error);

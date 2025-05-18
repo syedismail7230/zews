@@ -26,8 +26,18 @@ export default function Login() {
       if (error) throw error;
 
       if (data.user) {
-        // Wait for session to be established
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Check if user profile exists
+        const { data: profiles, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', data.user.id);
+
+        if (profileError) throw profileError;
+
+        if (!profiles || profiles.length === 0) {
+          throw new Error('User profile not found. Please contact support.');
+        }
+
         navigate('/dashboard');
       } else {
         throw new Error('Login failed. Please try again.');

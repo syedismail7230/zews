@@ -33,6 +33,16 @@ export default function Register() {
     setLoading(true);
 
     try {
+      // Check if user already exists
+      const { data: existingProfiles } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('email', email.trim());
+
+      if (existingProfiles && existingProfiles.length > 0) {
+        throw new Error('An account with this email already exists');
+      }
+
       // Register user with Supabase Auth
       const { data: { user }, error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
@@ -64,7 +74,11 @@ export default function Register() {
           }
         ]);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        // If profile creation fails, delete the auth user to maintain consistency
+        await supabase.auth.admin.deleteUser(user.id);
+        throw new Error('Failed to create user profile. Please try again.');
+      }
 
       // Sign in the user
       const { error: signInError } = await supabase.auth.signInWithPassword({
