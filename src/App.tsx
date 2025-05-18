@@ -37,33 +37,47 @@ function App() {
         
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (sessionError) throw sessionError;
+        if (sessionError) {
+          throw new Error(`Session error: ${sessionError.message}`);
+        }
         
         if (session?.user) {
-          const { data, error } = await supabase
-            .from('user_profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+          try {
+            const { data, error } = await supabase
+              .from('user_profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+              
+            if (error) {
+              throw new Error(`Profile error: ${error.message}`);
+            }
             
-          if (error) throw error;
-          
-          setUser({
-            id: session.user.id,
-            email: session.user.email || '',
-            firstName: data.first_name || '',
-            lastName: data.last_name || '',
-            avatarUrl: data.avatar_url,
-            role: data.role || 'employee',
-            departmentId: data.department_id,
-            createdAt: data.created_at,
-            updatedAt: data.updated_at
-          });
+            if (!data) {
+              throw new Error('User profile not found');
+            }
+            
+            setUser({
+              id: session.user.id,
+              email: session.user.email || '',
+              firstName: data.first_name || '',
+              lastName: data.last_name || '',
+              avatarUrl: data.avatar_url,
+              role: data.role || 'employee',
+              departmentId: data.department_id,
+              createdAt: data.created_at,
+              updatedAt: data.updated_at
+            });
+          } catch (profileError: any) {
+            console.error('Profile fetch error:', profileError);
+            await supabase.auth.signOut();
+            throw new Error('Failed to load user profile. Please sign in again.');
+          }
         } else {
           setUser(null);
         }
       } catch (error: any) {
-        console.error('Error initializing app:', error);
+        console.error('App initialization error:', error);
         setInitError(error.message);
         setUser(null);
       } finally {
@@ -74,6 +88,8 @@ function App() {
     initializeApp();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state change:', event);
+      
       if (event === 'SIGNED_IN' && session) {
         setLoading(true);
         try {
@@ -83,7 +99,13 @@ function App() {
             .eq('id', session.user.id)
             .single();
             
-          if (error) throw error;
+          if (error) {
+            throw new Error(`Profile error: ${error.message}`);
+          }
+          
+          if (!data) {
+            throw new Error('User profile not found');
+          }
           
           setUser({
             id: session.user.id,
@@ -97,9 +119,10 @@ function App() {
             updatedAt: data.updated_at
           });
         } catch (error: any) {
-          console.error('Error during auth state change:', error);
+          console.error('Auth state change error:', error);
           setInitError(error.message);
           setUser(null);
+          await supabase.auth.signOut();
         } finally {
           setLoading(false);
         }
