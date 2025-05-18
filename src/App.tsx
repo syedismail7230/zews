@@ -34,6 +34,8 @@ function App() {
     const initializeApp = async () => {
       try {
         setLoading(true);
+        setInitError(null);
+        
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) throw sessionError;
@@ -43,21 +45,25 @@ function App() {
             .from('user_profiles')
             .select('*')
             .eq('id', session.user.id)
-            .single();
+            .maybeSingle();
             
           if (error) throw error;
           
-          setUser({
-            id: session.user.id,
-            email: session.user.email || '',
-            firstName: data.first_name || '',
-            lastName: data.last_name || '',
-            avatarUrl: data.avatar_url,
-            role: data.role || 'employee',
-            departmentId: data.department_id,
-            createdAt: data.created_at,
-            updatedAt: data.updated_at
-          });
+          if (data) {
+            setUser({
+              id: session.user.id,
+              email: session.user.email || '',
+              firstName: data.first_name || '',
+              lastName: data.last_name || '',
+              avatarUrl: data.avatar_url,
+              role: data.role || 'employee',
+              departmentId: data.department_id,
+              createdAt: data.created_at,
+              updatedAt: data.updated_at
+            });
+          } else {
+            setUser(null);
+          }
         } else {
           setUser(null);
         }
@@ -67,7 +73,7 @@ function App() {
         setUser(null);
       } finally {
         setLoading(false);
-        setTimeout(() => setAppReady(true), 500);
+        setTimeout(() => setAppReady(true), 300);
       }
     };
 
@@ -81,21 +87,25 @@ function App() {
             .from('user_profiles')
             .select('*')
             .eq('id', session.user.id)
-            .single();
+            .maybeSingle();
             
           if (error) throw error;
           
-          setUser({
-            id: session.user.id,
-            email: session.user.email || '',
-            firstName: data.first_name || '',
-            lastName: data.last_name || '',
-            avatarUrl: data.avatar_url,
-            role: data.role || 'employee',
-            departmentId: data.department_id,
-            createdAt: data.created_at,
-            updatedAt: data.updated_at
-          });
+          if (data) {
+            setUser({
+              id: session.user.id,
+              email: session.user.email || '',
+              firstName: data.first_name || '',
+              lastName: data.last_name || '',
+              avatarUrl: data.avatar_url,
+              role: data.role || 'employee',
+              departmentId: data.department_id,
+              createdAt: data.created_at,
+              updatedAt: data.updated_at
+            });
+          } else {
+            setUser(null);
+          }
         } catch (error: any) {
           console.error('Error during auth state change:', error);
           setInitError(error.message);
