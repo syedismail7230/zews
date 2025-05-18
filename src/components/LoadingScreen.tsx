@@ -46,9 +46,9 @@ export default function LoadingScreen() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1, duration: 0.5 }}
-          className="mt-4 text-sm text-muted-foreground"
+          className="mt-4 text-sm text-muted-foreground animate-pulse"
         >
-          Initializing application...
+          Please wait while we initialize your session...
         </motion.p>
       </div>
     </div>

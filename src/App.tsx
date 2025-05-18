@@ -30,38 +30,36 @@ function App() {
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     setTheme(prefersDark ? 'dark' : 'light');
     
-    const fetchUser = async () => {
+    const initializeApp = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (error) {
-          throw error;
+        if (sessionError) {
+          throw sessionError;
         }
         
         if (session?.user) {
-          // Get user profile data with retries
-          let profileData = null;
           let retries = 3;
+          let profileData = null;
           
           while (retries > 0) {
-            const { data, error: profileError } = await supabase
+            const { data, error } = await supabase
               .from('user_profiles')
               .select('*')
               .eq('id', session.user.id)
               .maybeSingle();
               
-            if (!profileError && data) {
+            if (!error && data) {
               profileData = data;
               break;
             }
             
-            console.log('Retrying profile fetch, attempts remaining:', retries - 1);
             retries--;
             if (retries > 0) {
-              await new Promise(resolve => setTimeout(resolve, 1500));
+              await new Promise(resolve => setTimeout(resolve, 1000));
             }
           }
-            
+          
           setUser({
             id: session.user.id,
             email: session.user.email || '',
@@ -75,55 +73,58 @@ function App() {
           });
         }
       } catch (error) {
-        console.error('Error fetching user session:', error);
+        console.error('Error initializing app:', error);
         setUser(null);
       } finally {
         setLoading(false);
-        // Add a small delay before setting appReady to ensure smooth transition
-        setTimeout(() => setAppReady(true), 500);
+        setTimeout(() => setAppReady(true), 1000);
       }
     };
 
-    fetchUser();
+    initializeApp();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
         setLoading(true);
-        // Get user profile data with retries
-        let profileData = null;
-        let retries = 3;
-        
-        while (retries > 0) {
-          const { data, error: profileError } = await supabase
-            .from('user_profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .maybeSingle();
+        try {
+          let retries = 3;
+          let profileData = null;
+          
+          while (retries > 0) {
+            const { data, error } = await supabase
+              .from('user_profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .maybeSingle();
+              
+            if (!error && data) {
+              profileData = data;
+              break;
+            }
             
-          if (!profileError && data) {
-            profileData = data;
-            break;
+            retries--;
+            if (retries > 0) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
           }
           
-          console.log('Retrying profile fetch on auth change, attempts remaining:', retries - 1);
-          retries--;
-          if (retries > 0) {
-            await new Promise(resolve => setTimeout(resolve, 1500));
-          }
+          setUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            firstName: profileData?.first_name || session.user.user_metadata?.first_name || '',
+            lastName: profileData?.last_name || session.user.user_metadata?.last_name || '',
+            avatarUrl: profileData?.avatar_url,
+            role: profileData?.role || 'employee',
+            departmentId: profileData?.department_id,
+            createdAt: profileData?.created_at || session.user.created_at,
+            updatedAt: profileData?.updated_at || session.user.updated_at
+          });
+        } catch (error) {
+          console.error('Error during auth state change:', error);
+          setUser(null);
+        } finally {
+          setLoading(false);
         }
-          
-        setUser({
-          id: session.user.id,
-          email: session.user.email || '',
-          firstName: profileData?.first_name || session.user.user_metadata?.first_name || '',
-          lastName: profileData?.last_name || session.user.user_metadata?.last_name || '',
-          avatarUrl: profileData?.avatar_url,
-          role: profileData?.role || 'employee',
-          departmentId: profileData?.department_id,
-          createdAt: profileData?.created_at || session.user.created_at,
-          updatedAt: profileData?.updated_at || session.user.updated_at
-        });
-        setLoading(false);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setLoading(false);
