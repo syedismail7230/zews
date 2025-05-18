@@ -43,48 +43,24 @@ function App() {
         }
         
         if (session?.user) {
-          let retries = 3;
-          let profileData = null;
-          let lastError = null;
-          
-          while (retries > 0) {
-            try {
-              const { data, error } = await supabase
-                .from('user_profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .maybeSingle();
-                
-              if (!error && data) {
-                profileData = data;
-                break;
-              }
-              
-              lastError = error;
-            } catch (err) {
-              lastError = err;
-            }
+          const { data, error } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .maybeSingle();
             
-            retries--;
-            if (retries > 0) {
-              await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-          }
-          
-          if (!profileData && lastError) {
-            throw new Error(`Failed to fetch user profile: ${lastError.message}`);
-          }
+          if (error) throw error;
           
           setUser({
             id: session.user.id,
             email: session.user.email || '',
-            firstName: profileData?.first_name || session.user.user_metadata?.first_name || '',
-            lastName: profileData?.last_name || session.user.user_metadata?.last_name || '',
-            avatarUrl: profileData?.avatar_url,
-            role: profileData?.role || 'employee',
-            departmentId: profileData?.department_id,
-            createdAt: profileData?.created_at || session.user.created_at,
-            updatedAt: profileData?.updated_at || session.user.updated_at
+            firstName: data?.first_name || session.user.user_metadata?.first_name || '',
+            lastName: data?.last_name || session.user.user_metadata?.last_name || '',
+            avatarUrl: data?.avatar_url,
+            role: data?.role || 'employee',
+            departmentId: data?.department_id,
+            createdAt: data?.created_at || session.user.created_at,
+            updatedAt: data?.updated_at || session.user.updated_at
           });
         } else {
           setUser(null);
@@ -95,7 +71,7 @@ function App() {
         setUser(null);
       } finally {
         setLoading(false);
-        setTimeout(() => setAppReady(true), 1000);
+        setAppReady(true);
       }
     };
 
@@ -105,48 +81,24 @@ function App() {
       if (event === 'SIGNED_IN' && session) {
         setLoading(true);
         try {
-          let retries = 3;
-          let profileData = null;
-          let lastError = null;
-          
-          while (retries > 0) {
-            try {
-              const { data, error } = await supabase
-                .from('user_profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .maybeSingle();
-                
-              if (!error && data) {
-                profileData = data;
-                break;
-              }
-              
-              lastError = error;
-            } catch (err) {
-              lastError = err;
-            }
+          const { data, error } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .maybeSingle();
             
-            retries--;
-            if (retries > 0) {
-              await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-          }
-          
-          if (!profileData && lastError) {
-            throw new Error(`Failed to fetch user profile: ${lastError.message}`);
-          }
+          if (error) throw error;
           
           setUser({
             id: session.user.id,
             email: session.user.email || '',
-            firstName: profileData?.first_name || session.user.user_metadata?.first_name || '',
-            lastName: profileData?.last_name || session.user.user_metadata?.last_name || '',
-            avatarUrl: profileData?.avatar_url,
-            role: profileData?.role || 'employee',
-            departmentId: profileData?.department_id,
-            createdAt: profileData?.created_at || session.user.created_at,
-            updatedAt: profileData?.updated_at || session.user.updated_at
+            firstName: data?.first_name || session.user.user_metadata?.first_name || '',
+            lastName: data?.last_name || session.user.user_metadata?.last_name || '',
+            avatarUrl: data?.avatar_url,
+            role: data?.role || 'employee',
+            departmentId: data?.department_id,
+            createdAt: data?.created_at || session.user.created_at,
+            updatedAt: data?.updated_at || session.user.updated_at
           });
         } catch (error: any) {
           console.error('Error during auth state change:', error);
