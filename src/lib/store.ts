@@ -6,6 +6,7 @@ type AuthState = {
   isLoading: boolean;
   setUser: (user: User | null) => void;
   setLoading: (isLoading: boolean) => void;
+  reset: () => void;
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -13,6 +14,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
   setUser: (user) => set({ user }),
   setLoading: (isLoading) => set({ isLoading }),
+  reset: () => set({ user: null, isLoading: false })
 }));
 
 type NotificationState = {
@@ -22,6 +24,7 @@ type NotificationState = {
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
   setNotifications: (notifications: Notification[]) => void;
+  reset: () => void;
 };
 
 export const useNotificationStore = create<NotificationState>((set) => ({
@@ -30,7 +33,7 @@ export const useNotificationStore = create<NotificationState>((set) => ({
   addNotification: (notification) =>
     set((state) => ({
       notifications: [notification, ...state.notifications],
-      unreadCount: state.unreadCount + 1,
+      unreadCount: state.unreadCount + (notification.isRead ? 0 : 1),
     })),
   markAsRead: (id) =>
     set((state) => {
@@ -39,7 +42,7 @@ export const useNotificationStore = create<NotificationState>((set) => ({
       );
       return {
         notifications: updatedNotifications,
-        unreadCount: state.unreadCount - 1,
+        unreadCount: updatedNotifications.filter((n) => !n.isRead).length,
       };
     }),
   markAllAsRead: () =>
@@ -52,6 +55,7 @@ export const useNotificationStore = create<NotificationState>((set) => ({
       notifications,
       unreadCount: notifications.filter((n) => !n.isRead).length,
     }),
+  reset: () => set({ notifications: [], unreadCount: 0 })
 }));
 
 type ThemeState = {

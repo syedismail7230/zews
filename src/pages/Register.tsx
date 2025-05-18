@@ -19,7 +19,12 @@ export default function Register() {
     e.preventDefault();
     setError(null);
 
-    // Validate passwords match
+    // Validate inputs
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim()) {
+      setError('All fields are required');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -30,12 +35,12 @@ export default function Register() {
     try {
       // Register user with Supabase Auth
       const { data: { user }, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
+        email: email.trim(),
+        password: password.trim(),
         options: {
           data: {
-            first_name: firstName,
-            last_name: lastName,
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
           },
         },
       });
@@ -43,54 +48,36 @@ export default function Register() {
       if (signUpError) throw signUpError;
 
       if (!user) {
-        throw new Error('User registration failed');
+        throw new Error('Registration failed');
       }
 
-      // Wait a moment for the auth session to be established
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Create user profile
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .insert([
+          {
+            id: user.id,
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+            email: email.trim(),
+            role: 'employee',
+          }
+        ]);
 
-      // Create user profile record with retries
-      let profileCreated = false;
-      let retries = 3;
+      if (profileError) throw profileError;
 
-      while (retries > 0 && !profileCreated) {
-        const { error: profileError } = await supabase
-          .from('user_profiles')
-          .insert([
-            {
-              id: user.id,
-              first_name: firstName,
-              last_name: lastName,
-              email: email,
-              role: 'employee',
-            }
-          ]);
-
-        if (!profileError) {
-          profileCreated = true;
-          break;
-        }
-
-        retries--;
-        if (retries > 0) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        } else {
-          throw profileError;
-        }
-      }
-
-      // Sign in the user immediately after registration
+      // Sign in the user
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: email.trim(),
+        password: password.trim(),
       });
 
       if (signInError) throw signInError;
 
-      // Redirect to dashboard
       navigate('/dashboard');
     } catch (error: any) {
-      setError(error.message || 'Registration failed. Please try again later.');
+      console.error('Registration error:', error);
+      setError(error.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }

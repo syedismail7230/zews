@@ -4,7 +4,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+  throw new Error('Missing Supabase environment variables. Please check your .env file.');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -12,6 +12,24 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: false,
-    storage: localStorage
+    storageKey: 'zews_auth',
+    storage: window.localStorage
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
+  }
+});
+
+// Add error handling for auth state changes
+supabase.auth.onAuthStateChange((event, session) => {
+  console.log('Auth state changed:', event);
+  if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+    // Clear local storage
+    localStorage.removeItem('zews_auth');
+    
+    // Reload the page to reset all state
+    window.location.reload();
   }
 });
