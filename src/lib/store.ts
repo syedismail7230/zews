@@ -47,7 +47,10 @@ export const useNotificationStore = create<NotificationState>((set) => ({
     }),
   markAllAsRead: () =>
     set((state) => ({
-      notifications: state.notifications.map((notification) => ({ ...notification, isRead: true })),
+      notifications: state.notifications.map((notification) => ({
+        ...notification,
+        isRead: true,
+      })),
       unreadCount: 0,
     })),
   setNotifications: (notifications) =>

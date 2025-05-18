@@ -20,12 +20,14 @@ export default function Login() {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
-        password: password.trim()
+        password: password.trim(),
       });
 
       if (error) throw error;
 
       if (data.user) {
+        // Wait for session to be established
+        await new Promise(resolve => setTimeout(resolve, 500));
         navigate('/dashboard');
       } else {
         throw new Error('Login failed. Please try again.');

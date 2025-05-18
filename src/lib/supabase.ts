@@ -11,9 +11,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: false,
-    storageKey: 'zews_auth',
-    storage: window.localStorage
+    detectSessionInUrl: true,
+    flowType: 'pkce',
+    storage: localStorage,
+    storageKey: 'zews_auth_token'
   },
   realtime: {
     params: {
@@ -24,12 +25,18 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 // Add error handling for auth state changes
 supabase.auth.onAuthStateChange((event, session) => {
-  console.log('Auth state changed:', event);
+  console.log('Auth state changed:', event, session?.user?.id);
+  
+  if (event === 'TOKEN_REFRESHED') {
+    console.log('Token refreshed successfully');
+  }
+  
   if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
-    // Clear local storage
-    localStorage.removeItem('zews_auth');
+    // Clear auth data
+    localStorage.removeItem('zews_auth_token');
+    localStorage.removeItem('supabase.auth.token');
     
     // Reload the page to reset all state
-    window.location.reload();
+    window.location.href = '/login';
   }
 });
