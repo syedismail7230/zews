@@ -28,19 +28,6 @@ export default function Register() {
     setLoading(true);
 
     try {
-      // Check if user already exists
-      const { data: existingUser } = await supabase
-        .from('user_profiles')
-        .select('id')
-        .eq('email', email)
-        .single();
-
-      if (existingUser) {
-        setError('An account with this email already exists. Please sign in instead.');
-        setLoading(false);
-        return;
-      }
-
       // Register user with Supabase Auth
       const { data: { user }, error: signUpError } = await supabase.auth.signUp({
         email,
@@ -53,13 +40,7 @@ export default function Register() {
         },
       });
 
-      if (signUpError) {
-        // Handle specific error cases
-        if (signUpError.message.includes('user_already_exists') || signUpError.message.includes('User already registered')) {
-          throw new Error('An account with this email already exists. Please sign in instead.');
-        }
-        throw signUpError;
-      }
+      if (signUpError) throw signUpError;
 
       if (!user) {
         throw new Error('User registration failed');
@@ -130,13 +111,6 @@ export default function Register() {
             className="p-3 rounded bg-destructive/10 border border-destructive/30 text-destructive text-sm"
           >
             {error}
-            {error.includes('already exists') && (
-              <div className="mt-2">
-                <Link to="/login" className="text-primary hover:underline">
-                  Click here to sign in
-                </Link>
-              </div>
-            )}
           </motion.div>
         )}
 
