@@ -27,10 +27,12 @@ export default function Login() {
 
       if (data.user) {
         navigate('/dashboard');
+      } else {
+        throw new Error('Login failed. Please try again.');
       }
     } catch (error: any) {
-      console.error('Sign in error:', error);
-      setError(error.message);
+      console.error('Login error:', error);
+      setError(error.message || 'Failed to sign in. Please check your credentials.');
     } finally {
       setLoading(false);
     }
