@@ -43,7 +43,7 @@ function App() {
           let profileData = null;
           let retries = 3;
           
-          while (retries > 0 && !profileData) {
+          while (retries > 0) {
             const { data, error: profileError } = await supabase
               .from('user_profiles')
               .select('*')
@@ -55,9 +55,10 @@ function App() {
               break;
             }
             
+            console.log('Retrying profile fetch, attempts remaining:', retries - 1);
             retries--;
             if (retries > 0) {
-              await new Promise(resolve => setTimeout(resolve, 1000));
+              await new Promise(resolve => setTimeout(resolve, 1500));
             }
           }
             
@@ -75,9 +76,11 @@ function App() {
         }
       } catch (error) {
         console.error('Error fetching user session:', error);
+        setUser(null);
       } finally {
         setLoading(false);
-        setAppReady(true);
+        // Add a small delay before setting appReady to ensure smooth transition
+        setTimeout(() => setAppReady(true), 500);
       }
     };
 
@@ -85,11 +88,12 @@ function App() {
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
+        setLoading(true);
         // Get user profile data with retries
         let profileData = null;
         let retries = 3;
         
-        while (retries > 0 && !profileData) {
+        while (retries > 0) {
           const { data, error: profileError } = await supabase
             .from('user_profiles')
             .select('*')
@@ -101,9 +105,10 @@ function App() {
             break;
           }
           
+          console.log('Retrying profile fetch on auth change, attempts remaining:', retries - 1);
           retries--;
           if (retries > 0) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 1500));
           }
         }
           
@@ -118,8 +123,10 @@ function App() {
           createdAt: profileData?.created_at || session.user.created_at,
           updatedAt: profileData?.updated_at || session.user.updated_at
         });
+        setLoading(false);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
+        setLoading(false);
       }
     });
 
