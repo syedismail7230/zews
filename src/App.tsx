@@ -30,12 +30,21 @@ async function fetchUserProfile(userId: string, retries = PROFILE_FETCH_RETRIES)
       .from('user_profiles')
       .select('*')
       .eq('id', userId)
-      .single();
+      .maybeSingle(); // Use maybeSingle instead of single to handle null case
 
     if (error) throw error;
-    if (!data) throw new Error('Profile not found');
 
-    return data;
+    // Return default profile if no data found
+    return data || {
+      id: userId,
+      first_name: '',
+      last_name: '',
+      avatar_url: null,
+      role: 'employee',
+      department_id: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
   } catch (error) {
     if (retries > 0) {
       await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
