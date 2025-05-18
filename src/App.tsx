@@ -25,6 +25,7 @@ function App() {
   const { user, setUser, isLoading, setLoading } = useAuthStore();
   const { theme, setTheme } = useThemeStore();
   const [appReady, setAppReady] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
   
   useEffect(() => {
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -32,6 +33,9 @@ function App() {
     
     const initializeApp = async () => {
       try {
+        setLoading(true);
+        setInitError(null);
+        
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
@@ -41,23 +45,34 @@ function App() {
         if (session?.user) {
           let retries = 3;
           let profileData = null;
+          let lastError = null;
           
           while (retries > 0) {
-            const { data, error } = await supabase
-              .from('user_profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .maybeSingle();
+            try {
+              const { data, error } = await supabase
+                .from('user_profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .maybeSingle();
+                
+              if (!error && data) {
+                profileData = data;
+                break;
+              }
               
-            if (!error && data) {
-              profileData = data;
-              break;
+              lastError = error;
+            } catch (err) {
+              lastError = err;
             }
             
             retries--;
             if (retries > 0) {
               await new Promise(resolve => setTimeout(resolve, 1000));
             }
+          }
+          
+          if (!profileData && lastError) {
+            throw new Error(`Failed to fetch user profile: ${lastError.message}`);
           }
           
           setUser({
@@ -71,9 +86,12 @@ function App() {
             createdAt: profileData?.created_at || session.user.created_at,
             updatedAt: profileData?.updated_at || session.user.updated_at
           });
+        } else {
+          setUser(null);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error initializing app:', error);
+        setInitError(error.message);
         setUser(null);
       } finally {
         setLoading(false);
@@ -89,23 +107,34 @@ function App() {
         try {
           let retries = 3;
           let profileData = null;
+          let lastError = null;
           
           while (retries > 0) {
-            const { data, error } = await supabase
-              .from('user_profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .maybeSingle();
+            try {
+              const { data, error } = await supabase
+                .from('user_profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .maybeSingle();
+                
+              if (!error && data) {
+                profileData = data;
+                break;
+              }
               
-            if (!error && data) {
-              profileData = data;
-              break;
+              lastError = error;
+            } catch (err) {
+              lastError = err;
             }
             
             retries--;
             if (retries > 0) {
               await new Promise(resolve => setTimeout(resolve, 1000));
             }
+          }
+          
+          if (!profileData && lastError) {
+            throw new Error(`Failed to fetch user profile: ${lastError.message}`);
           }
           
           setUser({
@@ -119,8 +148,9 @@ function App() {
             createdAt: profileData?.created_at || session.user.created_at,
             updatedAt: profileData?.updated_at || session.user.updated_at
           });
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error during auth state change:', error);
+          setInitError(error.message);
           setUser(null);
         } finally {
           setLoading(false);
@@ -137,7 +167,7 @@ function App() {
   }, []);
 
   if (!appReady || isLoading) {
-    return <LoadingScreen />;
+    return <LoadingScreen error={initError} />;
   }
 
   return (
