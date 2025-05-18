@@ -61,7 +61,7 @@ export default function Register() {
         throw new Error('Registration failed');
       }
 
-      // Create user profile
+      // Create user profile and wait for it to complete
       const { error: profileError } = await supabase
         .from('user_profiles')
         .insert([
@@ -80,7 +80,19 @@ export default function Register() {
         throw new Error('Failed to create user profile. Please try again.');
       }
 
-      // Sign in the user
+      // Verify profile was created before signing in
+      const { data: profile, error: verifyError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (verifyError || !profile) {
+        await supabase.auth.admin.deleteUser(user.id);
+        throw new Error('Failed to verify user profile. Please try again.');
+      }
+
+      // Only sign in after confirming profile exists
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password.trim(),

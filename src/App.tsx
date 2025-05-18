@@ -21,6 +21,30 @@ import NotFound from './pages/NotFound';
 // Components
 import LoadingScreen from './components/LoadingScreen';
 
+const PROFILE_FETCH_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
+
+async function fetchUserProfile(userId: string, retries = PROFILE_FETCH_RETRIES): Promise<any> {
+  try {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) throw error;
+    if (!data) throw new Error('Profile not found');
+
+    return data;
+  } catch (error) {
+    if (retries > 0) {
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+      return fetchUserProfile(userId, retries - 1);
+    }
+    throw error;
+  }
+}
+
 function App() {
   const { user, setUser, isLoading, setLoading } = useAuthStore();
   const { theme, setTheme } = useThemeStore();
@@ -43,24 +67,7 @@ function App() {
         
         if (session?.user) {
           try {
-            const { data, error } = await supabase
-              .from('user_profiles')
-              .select('*')
-              .eq('id', session.user.id);
-              
-            if (error) {
-              throw new Error(`Profile error: ${error.message}`);
-            }
-            
-            if (!data || data.length === 0) {
-              throw new Error('User profile not found');
-            }
-
-            if (data.length > 1) {
-              console.error('Multiple profiles found for user:', session.user.id);
-            }
-
-            const profile = data[0];
+            const profile = await fetchUserProfile(session.user.id);
             
             setUser({
               id: session.user.id,
@@ -98,24 +105,7 @@ function App() {
       if (event === 'SIGNED_IN' && session) {
         setLoading(true);
         try {
-          const { data, error } = await supabase
-            .from('user_profiles')
-            .select('*')
-            .eq('id', session.user.id);
-            
-          if (error) {
-            throw new Error(`Profile error: ${error.message}`);
-          }
-          
-          if (!data || data.length === 0) {
-            throw new Error('User profile not found');
-          }
-
-          if (data.length > 1) {
-            console.error('Multiple profiles found for user:', session.user.id);
-          }
-
-          const profile = data[0];
+          const profile = await fetchUserProfile(session.user.id);
           
           setUser({
             id: session.user.id,
