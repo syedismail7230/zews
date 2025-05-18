@@ -33,37 +33,30 @@ function App() {
     
     const initializeApp = async () => {
       try {
-        setLoading(true);
-        setInitError(null);
-        
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (sessionError) {
-          throw sessionError;
-        }
+        if (sessionError) throw sessionError;
         
         if (session?.user) {
           const { data, error } = await supabase
             .from('user_profiles')
             .select('*')
             .eq('id', session.user.id)
-            .maybeSingle();
+            .single();
             
           if (error) throw error;
           
           setUser({
             id: session.user.id,
             email: session.user.email || '',
-            firstName: data?.first_name || session.user.user_metadata?.first_name || '',
-            lastName: data?.last_name || session.user.user_metadata?.last_name || '',
-            avatarUrl: data?.avatar_url,
-            role: data?.role || 'employee',
-            departmentId: data?.department_id,
-            createdAt: data?.created_at || session.user.created_at,
-            updatedAt: data?.updated_at || session.user.updated_at
+            firstName: data.first_name || '',
+            lastName: data.last_name || '',
+            avatarUrl: data.avatar_url,
+            role: data.role || 'employee',
+            departmentId: data.department_id,
+            createdAt: data.created_at,
+            updatedAt: data.updated_at
           });
-        } else {
-          setUser(null);
         }
       } catch (error: any) {
         console.error('Error initializing app:', error);
@@ -79,37 +72,33 @@ function App() {
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        setLoading(true);
         try {
           const { data, error } = await supabase
             .from('user_profiles')
             .select('*')
             .eq('id', session.user.id)
-            .maybeSingle();
+            .single();
             
           if (error) throw error;
           
           setUser({
             id: session.user.id,
             email: session.user.email || '',
-            firstName: data?.first_name || session.user.user_metadata?.first_name || '',
-            lastName: data?.last_name || session.user.user_metadata?.last_name || '',
-            avatarUrl: data?.avatar_url,
-            role: data?.role || 'employee',
-            departmentId: data?.department_id,
-            createdAt: data?.created_at || session.user.created_at,
-            updatedAt: data?.updated_at || session.user.updated_at
+            firstName: data.first_name || '',
+            lastName: data.last_name || '',
+            avatarUrl: data.avatar_url,
+            role: data.role || 'employee',
+            departmentId: data.department_id,
+            createdAt: data.created_at,
+            updatedAt: data.updated_at
           });
         } catch (error: any) {
           console.error('Error during auth state change:', error);
           setInitError(error.message);
           setUser(null);
-        } finally {
-          setLoading(false);
         }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
-        setLoading(false);
       }
     });
 

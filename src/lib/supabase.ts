@@ -12,12 +12,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: false,
-    storageKey: 'zews_auth',
-    storage: window.localStorage
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 2
-    }
+    storageKey: 'zews_auth'
   }
 });
