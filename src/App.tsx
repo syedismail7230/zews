@@ -33,6 +33,7 @@ function App() {
     
     const initializeApp = async () => {
       try {
+        setLoading(true);
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) throw sessionError;
@@ -57,6 +58,8 @@ function App() {
             createdAt: data.created_at,
             updatedAt: data.updated_at
           });
+        } else {
+          setUser(null);
         }
       } catch (error: any) {
         console.error('Error initializing app:', error);
@@ -64,7 +67,7 @@ function App() {
         setUser(null);
       } finally {
         setLoading(false);
-        setAppReady(true);
+        setTimeout(() => setAppReady(true), 500);
       }
     };
 
@@ -72,6 +75,7 @@ function App() {
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
+        setLoading(true);
         try {
           const { data, error } = await supabase
             .from('user_profiles')
@@ -96,9 +100,12 @@ function App() {
           console.error('Error during auth state change:', error);
           setInitError(error.message);
           setUser(null);
+        } finally {
+          setLoading(false);
         }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
+        setLoading(false);
       }
     });
 
