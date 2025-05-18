@@ -32,34 +32,15 @@ function App() {
     
     const initializeApp = async () => {
       try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          throw sessionError;
-        }
+        const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
-          let retries = 3;
-          let profileData = null;
-          
-          while (retries > 0) {
-            const { data, error } = await supabase
-              .from('user_profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .maybeSingle();
-              
-            if (!error && data) {
-              profileData = data;
-              break;
-            }
+          const { data: profileData } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .maybeSingle();
             
-            retries--;
-            if (retries > 0) {
-              await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-          }
-          
           setUser({
             id: session.user.id,
             email: session.user.email || '',
@@ -77,7 +58,7 @@ function App() {
         setUser(null);
       } finally {
         setLoading(false);
-        setTimeout(() => setAppReady(true), 1000);
+        setAppReady(true);
       }
     };
 
@@ -85,49 +66,25 @@ function App() {
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        setLoading(true);
-        try {
-          let retries = 3;
-          let profileData = null;
+        const { data: profileData } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .maybeSingle();
           
-          while (retries > 0) {
-            const { data, error } = await supabase
-              .from('user_profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .maybeSingle();
-              
-            if (!error && data) {
-              profileData = data;
-              break;
-            }
-            
-            retries--;
-            if (retries > 0) {
-              await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-          }
-          
-          setUser({
-            id: session.user.id,
-            email: session.user.email || '',
-            firstName: profileData?.first_name || session.user.user_metadata?.first_name || '',
-            lastName: profileData?.last_name || session.user.user_metadata?.last_name || '',
-            avatarUrl: profileData?.avatar_url,
-            role: profileData?.role || 'employee',
-            departmentId: profileData?.department_id,
-            createdAt: profileData?.created_at || session.user.created_at,
-            updatedAt: profileData?.updated_at || session.user.updated_at
-          });
-        } catch (error) {
-          console.error('Error during auth state change:', error);
-          setUser(null);
-        } finally {
-          setLoading(false);
-        }
+        setUser({
+          id: session.user.id,
+          email: session.user.email || '',
+          firstName: profileData?.first_name || session.user.user_metadata?.first_name || '',
+          lastName: profileData?.last_name || session.user.user_metadata?.last_name || '',
+          avatarUrl: profileData?.avatar_url,
+          role: profileData?.role || 'employee',
+          departmentId: profileData?.department_id,
+          createdAt: profileData?.created_at || session.user.created_at,
+          updatedAt: profileData?.updated_at || session.user.updated_at
+        });
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
-        setLoading(false);
       }
     });
 
